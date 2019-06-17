@@ -22,7 +22,7 @@ tags:
   
 其具体例子可见图1
 
-![1](2019-06-17-gradient-domain/1.png)
+![1](img/Post/2019-06-17-gradient-domain/1.png)
 
 # 二、关于基于梯度域方法的三大要素
 
@@ -57,23 +57,23 @@ $$
 
 像素 $ i $ 产生路径 $\overline{x}$ 所使用的随机序列记为 $\overline{U}$，重复使用该随机序列来产生对应的 offset path $\widetilde{x}$。
 
-![图2](2019-06-17-gradient-domain/2.png)
+![图2](img/Post/2019-06-17-gradient-domain/2.png)
 
 ## 2、半向量保留
 
 保留 base path 中每个顶点的半向量（**局部空间**），根据半向量，入射向量，可以直接计算得到出射方向。
 
-![图3](2019-06-17-gradient-domain/3.png)
+![图3](img/Post/2019-06-17-gradient-domain/3.png)
 
 ## 3、路径重连（Vertex reconnection）
 
 只在 S 表面上进行 offset（S表面能量分布的lobe过窄，直接连接其路径能量大概率可能携带能量为0），对于 D 表面，直接重连这些 D 顶点。
 
-![图4](2019-06-17-gradient-domain/4.png)
+![图4](img/Post/2019-06-17-gradient-domain/4.png)
 
 ## 4、Manifold Perturbation （详见 Manifold Exploration）
 
-![图5](2019-06-17-gradient-domain/5.png)
+![图5](img/Post/2019-06-17-gradient-domain/5.png)
 
 
 几种基于 Gradient - Domain 的方法在构建 offset path 上都采用了上述的一种或多种（主要为后三种）Shift 函数，并根据选择的基础算法不同进行了一定的修改。
@@ -82,7 +82,7 @@ $$
 ## 1、GD - MLT
 使用 Markov Chain Monte Carlo 的方法对目标函数 $ f(\overline{x})$进行采样。传统的 MLT 方法对于目标函数只考虑了像素路径的能量贡献，但是在 GD - MLT中的目标函数还考虑了梯度的变化。
 
-![图6](2019-06-17-gradient-domain/6.png)
+![图6](img/Post/2019-06-17-gradient-domain/6.png)
 在梯度变化大的地方着重采样能明显提高效率，上图中，GD - MLT 在采样重心更多的放在了阴影处。
 
 ### 1.1、Shift 函数
@@ -114,7 +114,7 @@ $$
 1. base path 中的当前顶点或者下一个顶点类型为 S ，则在半向量保留的前提下进行 ray tracing 并生成下一个 offset 顶点
 2. offset path 的当前顶点以及 base path的当前及下一个顶点的类型 **都**为 D 类型，则将当前 offset path 的顶点与 base path 中的下一个顶点相连
 
-![图7](2019-06-17-gradient-domain/7.png)
+![图7](img/Post/2019-06-17-gradient-domain/7.png)
 
 为了降低误差，需要 offset path 和 base path 的关联性较高，同时也要避免路径的能量分布极具变化（即 offset path 携带的能量可能为0）
 
@@ -134,7 +134,7 @@ $$
 
 可以这两种不同方向的生成方式视为两种不同的采样策略，然后使用 MIS 连接起来，这样还解决了当雅克比值过大时的进度问题（**从低能量区转换到高能量区**）
 
-![图GDPT-MIS](2019-06-17-gradient-domain/PT-MIS.png)
+![图GDPT-MIS](img/Post/2019-06-17-gradient-domain/PT-MIS.png)
 
 前向采样 MIS 权值为：
 $$
@@ -163,14 +163,103 @@ BDPT 中一次迭代会生成多条路径（**对于子路径的不同连接方�
 **S 点不作为连接点 （在S处连接的 BSDF 值非常小，所以去掉这一部分影响不会很大）**
 
 对于连接后形成的路径 $\overline{x}$ ，使用 Manifold Perturbation进行扰动
+对于前三个连续的 D 顶点 $x_a x_b x_c$ ，GD-GDPT 规定 $x_a$ 为相机，则有以下三种情况
+1. $x_b , x_c \in x^E$ ，则对 $x_a ~ x_b ~ x_c$ 进行 Manifold Perturbation
+2. $x_b \in x^E , x_c \in x^L$ 由于 S 点不能做连接点，所以 $c = b + 1$。此时由于 Manifold Perturbation也在第一段 S 链也进行了**半向量保留**，且 $x_b , x_c$为连续的 DD 点，所以退化成 GD-PT中的情况
+3. $x_b , x_c \in x^L$ 同理，所以 $ b = a +  1$ ，该情况下，整个路径由 light tracing 得到
 
+情况 **1 2** 的 Shift 操作在 $x^E$ 进行，分别为 $x_a$ ~ $x_b$ ~ $x_c $ 和 $x_a$ ~ $x_b$ 段。而 情况 **3** 的 Shift 则全在$x^L$中进行
 
+![图 8](img/Post/2019-06-17-gradient-domain/8.png)
+
+### 3.2、多重重要性采样
+采用和 GD-PT 一样的策略，将两种不同方向的 offset path 生成方法视为两种不同的采样策略，且同时和 BDPT 中基于多种连接方案的 MIS 合并，得到：
+$$
+w_{i j ; s t}(\overline{x})=\frac{p_{s, t}(\overline{x})}{\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})+p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|},
+$$
+
+其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|$ 则与梯度有关。
+
+## 4、GD-PM
+
+### 4.1、Shift 函数
+基于 PM 的算法存在两条子路径，相机路径 $x^E$ 和光子路径 $x^L$:
+
+![图9](img/Post/2019-06-17-gradient-domain/9.png)
+对于 $x^E = \left \{x_0^E , x_1^E , \cdots , x_{s-1}^E \right\}$ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $LS^*D$。
+对于 $x^L = \left \{x_0^L , x_1^L , \cdots , x_{t-1}^L \right\}$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^*D$。
+
+综上，对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$处使用 Density estimation, 所以不需要连续的 DD 路径
+对于 $x^L$ 进行 manifold perturbation。
+
+实际上，在 GD-PM 中，对于$x^E$ 的抖动会产生 $x^{E,off}_{s-1}$ , 将 $x^E_{s-1}$ 和 $x^L_{t-1}$ 的相对关系不变，以此来产生 $x^{' L,off}_{t-1}$ ，由于  $x^{' L,off}_{t-1}$ 不一定还在表面上，所以连接 $x^L_{t-2}$ 与  $x^{' L,off}_{t-1}$ 然后进行 ray tracing 得到真正的 offset 光子  $x^{L,off}_{t-1}$ ，然后在 $x^{L,off}_{t-1}$ ~ $x^L_b$ 上进行 manifold exploration。
+
+![图10](img/Post/2019-06-17-gradient-domain/10.png)
+
+值得注意的是，若 $x^L_{t-2}$ 为 D ，则不再需要后续的对 $x^L$的 manifold exploration ，而是直接相连即可。
+
+## 5、GD-VCM
+传统的 VCM 算法将 BDPT 和 PM 以 vertex connect 和 vertex merge 结合起来。
+
+### 5.1、Shift 函数
+G-VCM 中同样存在两条路径 $x^E$ 和 $x^L$ 。对于 $x^E$，采用 manifold perturbation
+
+VC 阶段的策略和 G-BDPT基本类似，只是在 MIS 上有所不同（考虑了 VM）。
+
+VM 阶段，对于 $x_a^E , x_b^E , x_c^E $处的 merge 操作有两种可能（PM 的 merge 必须在 D 表面上进行）：
+1. 在 $x_c^E$ 之后进行 merge ,
+此种情况和 offset 之后的 S 链吧、无关，只需要直接相连即可。
+
+![图11](img/Post/2019-06-17-gradient-domain/11.png)
+
+2. 在 $x_b^E$ 处进行 merge ，此时需要考虑 $x_{t-2}^L$ 的顶点属性
+   
+  + $x_{t-2}^E$ 为 D
+  直接连接 $x^L_{t-2}$ 与 $x^L_{t-1}$ 形成了DD 
+  ![图12](img/Post/2019-06-17-gradient-domain/12.png)
+
+  + $x_{t-2}^E$ 为 S
+  将 $x^{L,off}_{t-1}$ 设为 $x_b ^ {E , off}$，然后在 $x_b^L$ ~ $x^{L,off}_{t-1}$ 进行 manifold exploration
+  ![图13](img/Post/2019-06-17-gradient-domain/13.png)
+
+### 5.2、 和 GD-PM 的区别
+G-PM 中，根据 $x^L_{t-1}$ 与 $x^E_{s-1}$ 的关系，形成新的 $x^{',L,off}_{t-1}$，然后根据投影得到真正的 offset 光子 $x^{L,off}_{t-1}$
+
+而在 G-VCM 中，直接将  $x^{L,off}_{t-1}$ 设置为 $x^{E,off}_{s-1}$ ，两者在收敛后是等价的，因为基于 PM 的算法具有一致性。
+
+![图14](img/Post/2019-06-17-gradient-domain/14.png)
 # 五、雅可比行列式
 
 # 六、Shift函数的开销和对比
+## Manifold
++ 优点 
+足够 robust 效果好，符合相应的优化理论
++ 缺点
+时间开销大，需要整条路径构造完成后才能进行，同时当目标点距离初始点过远时，难以收敛，甚至无解
+
+## 半向量保留和路径顶点重连
++ 优点
+容易实现，开销小，只需要路径的局部坐标类型（当前点和后继点）就可以构建 offset path
++ 缺点
+不能面对复杂的情况，需要连续 DD 的路径
 
 
 # 七、GD- 算法分析
+基于梯度域的渲染算法依然有其基础算法的缺点，例如：
++ GD-PT 在焦散，光源遮挡上的问题
++ GD-BDPT在 SDS 上的问题
++ GD-MLT 分布优秀的基础路径
++ GD-PM Glossy
++ GD-VCM 高频细节确实和 Glossy - Spectrum 问题
 
+GD 算法针对原来算法大幅度提高了收敛速度
 
 # 八、可研究点
+1. GD 与其他基础渲染算法的结合
+主要针对参与性介质的渲染方法，比如 GD-UPBP
+2. 更好更高效的 Shift 函数
+3. GD 与 Path Guide的结合
+4. GD 在功业界的应用
+工业中，材质的属性过于复杂，不能简单的用 S 和 D来区分
+5. 其他领域
+Temporal; 波动光学；自适应采样；梯度异常处理；高阶分析（黑塞矩阵）;重构方法
