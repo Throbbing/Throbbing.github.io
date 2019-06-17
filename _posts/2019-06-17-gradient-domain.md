@@ -82,7 +82,7 @@ $$
 ## 1、GD - MLT
 使用 Markov Chain Monte Carlo 的方法对目标函数 $ f(\overline{x})$进行采样。传统的 MLT 方法对于目标函数只考虑了像素路径的能量贡献，但是在 GD - MLT中的目标函数还考虑了梯度的变化。
 
-![图6](/img/Post/2019-06-17-gradient-domain/6.png)
+![图6](/img/Post/2019-06-17-gradient-domain/6.PNG)
 在梯度变化大的地方着重采样能明显提高效率，上图中，GD - MLT 在采样重心更多的放在了阴影处。
 
 ### 1.1、Shift 函数
@@ -114,7 +114,7 @@ $$
 1. base path 中的当前顶点或者下一个顶点类型为 S ，则在半向量保留的前提下进行 ray tracing 并生成下一个 offset 顶点
 2. offset path 的当前顶点以及 base path的当前及下一个顶点的类型 **都**为 D 类型，则将当前 offset path 的顶点与 base path 中的下一个顶点相连
 
-![图7](/img/Post/2019-06-17-gradient-domain/7.png)
+![图7](/img/Post/2019-06-17-gradient-domain/7.PNG)
 
 为了降低误差，需要 offset path 和 base path 的关联性较高，同时也要避免路径的能量分布极具变化（即 offset path 携带的能量可能为0）
 
@@ -134,7 +134,7 @@ $$
 
 可以这两种不同方向的生成方式视为两种不同的采样策略，然后使用 MIS 连接起来，这样还解决了当雅克比值过大时的进度问题（**从低能量区转换到高能量区**）
 
-![图GDPT-MIS](/img/Post/2019-06-17-gradient-domain/PT-MIS.png)
+![图GDPT-MIS](/img/Post/2019-06-17-gradient-domain/PT-MIS.PNG)
 
 前向采样 MIS 权值为：
 $$
@@ -170,7 +170,7 @@ BDPT 中一次迭代会生成多条路径（**对于子路径的不同连接方�
 
 情况 **1 2** 的 Shift 操作在 $x^E$ 进行，分别为 $x_a$ ~ $x_b$ ~ $x_c $ 和 $x_a$ ~ $x_b$ 段。而 情况 **3** 的 Shift 则全在$x^L$中进行
 
-![图 8](/img/Post/2019-06-17-gradient-domain/8.png)
+![图 8](/img/Post/2019-06-17-gradient-domain/8.PNG)
 
 ### 3.2、多重重要性采样
 采用和 GD-PT 一样的策略，将两种不同方向的 offset path 生成方法视为两种不同的采样策略，且同时和 BDPT 中基于多种连接方案的 MIS 合并，得到：
