@@ -11,10 +11,10 @@ tags:
   - Rendering
 ---
 
+#  一、梯度域方法概述
 
-
-# 一、梯度域方法概述
 梯度域方法是一种“降噪”方法，其主要目的是加快基于 MonteCarlo 采样的收敛效率，基于梯度域的方法主要通过以下流程实现：
+
 1. 计算初始图像
 2. 计算梯度图像
 3. 对初始图像和梯度图像进行图像重构
@@ -25,11 +25,18 @@ tags:
 ![1](2019-06-17-gradient-domain/1.png)
 
 # 二、关于基于梯度域方法的三大要素
+
+
 ## 初始渲染算法
+
 初始渲染算法决定了路径的生成和初始图像的计算。
+
 ## $Shift$函数
+
 Shift 函数决定如何根据 base path 来生成 offset path。
+
 ## 雅可比行列式
+
 雅可比行列式用来矫正在 Offset Path 相对于 Base Path 的路径密度改变。
 
 其中 Offset 路径的贡献值的计算公式如下:
@@ -43,19 +50,23 @@ $$
 $$
 
 # 三、Shift函数
+
 根据 [GD-Path Tracing](https://mediatech.aalto.fi/publications/graphics/GPT/) 中的频率分析，offset path 与 base path 关联性越大，其重构后的方差就越小，最终呈现出的结果也就越好。
 
 ## 1、随机数复用
+
 像素 $ i $ 产生路径 $\overline{x}$ 所使用的随机序列记为 $\overline{U}$，重复使用该随机序列来产生对应的 offset path $\widetilde{x}$。
 
 ![图2](2019-06-17-gradient-domain/2.png)
 
 ## 2、半向量保留
+
 保留 base path 中每个顶点的半向量（**局部空间**），根据半向量，入射向量，可以直接计算得到出射方向。
 
 ![图3](2019-06-17-gradient-domain/3.png)
 
 ## 3、路径重连（Vertex reconnection）
+
 只在 S 表面上进行 offset（S表面能量分布的lobe过窄，直接连接其路径能量大概率可能携带能量为0），对于 D 表面，直接重连这些 D 顶点。
 
 ![图4](2019-06-17-gradient-domain/4.png)
@@ -99,7 +110,59 @@ $$
 
 ### 2.1、Shift 函数
 不采用 manifold exploration，而是采用半向量保留和路径顶点重连的方案。
+设 $j$ 为像素 $i$ 在屏幕空间上移动1单位后的像素。从 $j$开始进行 ray tracing。分为以下两种情况：
+1. base path 中的当前顶点或者下一个顶点类型为 S ，则在半向量保留的前提下进行 ray tracing 并生成下一个 offset 顶点
+2. offset path 的当前顶点以及 base path的当前及下一个顶点的类型 **都**为 D 类型，则将当前 offset path 的顶点与 base path 中的下一个顶点相连
 
+![图7](2019-06-17-gradient-domain/7.png)
+
+为了降低误差，需要 offset path 和 base path 的关联性较高，同时也要避免路径的能量分布极具变化（即 offset path 携带的能量可能为0）
+
+
+定义 base path 上的二元组 $ P = (  V_c^b , V_n^b)$，其中 c 为路径中的当前点，n 为下一个顶点， V 代表顶点类型（D 或者 S）。同时对于当前 offset 顶点记为 $V_c^o$ ，则路径顶点重连一共分为四种情况：
+1. $(S_c^o , D_n^b)$  该处的重连会使路径能量变得极小（完美 Specular 时为0），这是由于 SD 相连得到的出射方向与 S 处的 入射方向 符合 S 顶点上 BSDF 分布的概率极小
+2. $(S_c^o , S_n^b)$  与情况1相同
+3. $(D_c^o , D_n^b)$  D 上的方向变换不会引起 BSDF 的太大变化
+4. $(D_c^o , S_n^b)$  在 S 上的能量会发生明显变化
+
+综上所示，只有在 base path 中遇到 DD 类型的两个顶点时才会发生路径顶点重连
+
+### 2.1、 多重重要性采样
+对于像素 $i$ 其对应的路径 $\overline{x}$ 与 offset path $\overline{y}$ 可以从两个方向得到：
++ 正向采样 从 $i$ 采样得到 $\overline{x}$ , 从 $i+1$ 得到 offset path $\overline{y} = T(\overline{x})$
++ 反向采样 从 $i+1$采样得到 $\overline{y}$ , 然后得到 $\overline{x} = T^{-1}(\overline{y})$
+
+可以这两种不同方向的生成方式视为两种不同的采样策略，然后使用 MIS 连接起来，这样还解决了当雅克比值过大时的进度问题（**从低能量区转换到高能量区**）
+
+![图GDPT-MIS](2019-06-17-gradient-domain/PT-MIS.png)
+
+前向采样 MIS 权值为：
+$$
+w_{\text {forward}}(\overline{x})=\frac{p(\overline{x})}{p(\overline{x})+p(T(\overline{x}))\left|\frac{d \mu(T(\overline{x}))}{d \mu(\overline{x})}\right|}
+$$
+反向采样 MIS 权值为：
+$$
+w_{\text {backward}}(\overline{y})=\frac{p(\overline{y})}{p(\overline{y})+p(T^{-1}(\overline{y}))\left|\frac{d \mu(T^{-1}(\overline{y}))}{d \mu(\overline{y})}\right|}
+$$
+
+## 3、GD-BDPT
+
+### 3.1、Shift 函数
+在 BDPT 中，每次迭代都生成一条相机子路径和一条光源子路径。
+记相机子路径为 $x^E$ ，光源子路径为 $x^L$
+$$
+x^E = \left \{x_0^E , x_1^E , \cdots , x_{s-1}^E \right\}
+$$
+$$
+x^L = \left \{x_0^L , x_1^L , \cdots , x_{t-1}^L \right\}
+$$
+
+BDPT 中一次迭代会生成多条路径（**对于子路径的不同连接方式**）
+若每种连接方式产生的路径都产生对应的 offset path 将会产生大量的时间开销，所以 GD-BDPT中约定：
+
+**S 点不作为连接点 （在S处连接的 BSDF 值非常小，所以去掉这一部分影响不会很大）**
+
+对于连接后形成的路径 $\overline{x}$ ，使用 Manifold Perturbation进行扰动
 
 
 # 五、雅可比行列式
