@@ -197,7 +197,7 @@ $$
 w_{i j ; s t}(\overline{x})=\frac{p_{s, t}(\overline{x})}{\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})+p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|},
 $$
 
-其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 \(p_{k,s+t-k}(T_{i j}(\overline{x})|T_{i j}^{\prime}| \) 则与梯度有关。
+其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $$p_{k,s+t-k}(T_{i j}(\overline{x}) |T_{i j}^{\prime}| $$ 则与梯度有关。
 
 ## 4、GD-PM
 
@@ -206,8 +206,8 @@ $$
 基于 PM 的算法存在两条子路径，相机路径 $x^E$ 和光子路径 $x^L$:
 
 ![图9](/img/Post/2019-06-17-gradient-domain/9.png)
-对于 \(x^E = \{x_0^E , x_1^E , \cdots , x_{s-1}^E\} \) ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $LS^*D$。
-对于 $x^L = \{x_0^L , x_1^L , \cdots , x_{t-1}^L\}$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^{*}D$。
+对于 $x^E = \{x_0^E , x_1^E , \cdots , x_{s-1}^E\} $ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $$LS^*D$$。
+对于 $$x^L = \{x_0^L , x_1^L , \cdots , x_{t-1}^L\} $$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^{*}D$。
 
 综上对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$ 处使用 Density estimation, 所以不需要连续的 DD 路径 (或者说已经存在了 DD 路径，因为后续点是一个光子，而光子必定落在同一个 Diffuse 表面上)。
 对于 $x^L$ 进行 manifold perturbation。
