@@ -26,7 +26,6 @@ tags:
 
 # 二、关于基于梯度域方法的三大要素
 
-
 ## 初始渲染算法
 
 初始渲染算法决定了路径的生成和初始图像的计算。
@@ -40,11 +39,13 @@ Shift 函数决定如何根据 base path 来生成 offset path。
 雅可比行列式用来矫正在 Offset Path 相对于 Base Path 的路径密度改变。
 
 其中 Offset 路径的贡献值的计算公式如下:
+
 $$
 \begin{aligned} I_{j+1} &=\int_{\Omega} h_{j+1}(\overline{x}) f^{*}(\overline{x}) \mathrm{d} \mu(\overline{x}) \\ &=\int_{T_{1,0}^{-1}(\Omega)} h_{j+1}\left(T_{1,0}(\overline{x})\right) f^{*}\left(T_{1,0}(\overline{x})\right) \mathrm{d} \mu\left(T_{1,0}(\overline{x})\right) \\ &=\int_{\Omega} h_{j+1}\left(T_{1,0}(\overline{x})\right) f^{*}\left(T_{1,0}(\overline{x})\right) \frac{\mathrm{d}\left\{\mu \circ T_{1,0}\right\}}{\mathrm{d} \mu}(\overline{x}) \mathrm{d} \mu(\overline{x}) \\ &=\int_{\Omega} h_{j}(\overline{x}) f^{*}\left(T_{1,0}(\overline{x})\right) \frac{\mathrm{d}\left\{\mu \circ T_{1,0}\right\}}{\mathrm{d} \mu}(\overline{x}) \mathrm{d} \mu(\overline{x}) \end{aligned}\tag{1}
 $$
 
 则路径 $\overline{x}$ 的路径差 $I_j^{dx}$ 为：
+
 $$
 \begin{array}{l}{I_{j}^{\mathrm{d} x}=I_{j+1}-I_{j}=} \\ {\int_{\Omega} h_{j}(\overline{x})\left[f^{*}\left(T_{1,0}(\overline{x})\right) \frac{\mathrm{d}\left\{\mu \circ T_{1,0}\right\}}{\mathrm{d} \mu}(\overline{x})-f^{*}(\overline{x})\right] \mathrm{d} \mu(\overline{x})}\end{array}\tag{2}
 $$
@@ -75,17 +76,19 @@ $$
 
 ![图5](/img/Post/2019-06-17-gradient-domain/5.png)
 
-
 几种基于 Gradient - Domain 的方法在构建 offset path 上都采用了上述的一种或多种（主要为后三种）Shift 函数，并根据选择的基础算法不同进行了一定的修改。
+
 # 四、不同算法中Shift函数的应用以及具体调整
 
 ## 1、GD - MLT
+
 使用 Markov Chain Monte Carlo 的方法对目标函数 $ f(\overline{x})$进行采样。传统的 MLT 方法对于目标函数只考虑了像素路径的能量贡献，但是在 GD - MLT中的目标函数还考虑了梯度的变化。
 
 ![图6](/img/Post/2019-06-17-gradient-domain/6.PNG)
 在梯度变化大的地方着重采样能明显提高效率，上图中，GD - MLT 在采样重心更多的放在了阴影处。
 
 ### 1.1、Shift 函数
+
 1. 对于像素 $i$ 的 base path $\overline{x}$ 寻找前三个 D 顶点 $X_a, X_b, X_c$
 2. 根据像素 $j$ （$i$像素在屏幕空间的偏移像素）从 $X_a$ 处生成一条新的光线
 3. 在 $X_a $ ~ $X_b$ 的 Specular Chain 中进行 ray tracing， 以此生成新的 $X_a$ ~ $ X_b^{off}$ 路径。
@@ -94,23 +97,29 @@ $$
 上述过程即为 **Manifold Perturbation**。 
 
 ### 1.2、目标函数
+
 定义 $ \overline{z}$ 为：
 
 $$
 \overline{z} = \left \{ \overline{x}, f_x, f_y \right\}
 $$
+
 其中 $f_x$ 与 $f_y$ 为 base path 在 x,y 方向上对应的 offset path。
 则GD-MLT的目标函数为
+
 $$
 f(\overline{z})=\left\|f^{*}(\overline{z})\right\|+\alpha\left(\frac{1}{4}\left\|f^{*}(\overline{x})\right\|\right)\tag{3}
 $$
+
 其中第一项考虑了路径的梯度变化，第二项考虑了路径的能量贡献，而 $\alpha$ 代表自定义系数。
 
 ## 2、GD - PT
 
 ### 2.1、Shift 函数
+
 不采用 manifold exploration，而是采用半向量保留和路径顶点重连的方案。
 设 $j$ 为像素 $i$ 在屏幕空间上移动1单位后的像素。从 $j$开始进行 ray tracing。分为以下两种情况：
+
 1. base path 中的当前顶点或者下一个顶点类型为 S ，则在半向量保留的前提下进行 ray tracing 并生成下一个 offset 顶点
 2. offset path 的当前顶点以及 base path的当前及下一个顶点的类型 **都**为 D 类型，则将当前 offset path 的顶点与 base path 中的下一个顶点相连
 
@@ -118,8 +127,8 @@ $$
 
 为了降低误差，需要 offset path 和 base path 的关联性较高，同时也要避免路径的能量分布极具变化（即 offset path 携带的能量可能为0）
 
-
 定义 base path 上的二元组 $ P = (  V_c^b , V_n^b)$，其中 c 为路径中的当前点，n 为下一个顶点， V 代表顶点类型（D 或者 S）。同时对于当前 offset 顶点记为 $V_c^o$ ，则路径顶点重连一共分为四种情况：
+
 1. $(S_c^o , D_n^b)$  该处的重连会使路径能量变得极小（完美 Specular 时为0），这是由于 SD 相连得到的出射方向与 S 处的 入射方向 符合 S 顶点上 BSDF 分布的概率极小
 2. $(S_c^o , S_n^b)$  与情况1相同
 3. $(D_c^o , D_n^b)$  D 上的方向变换不会引起 BSDF 的太大变化
@@ -128,7 +137,9 @@ $$
 综上所示，只有在 base path 中遇到 DD 类型的两个顶点时才会发生路径顶点重连
 
 ### 2.1、 多重重要性采样
+
 对于像素 $i$ 其对应的路径 $\overline{x}$ 与 offset path $\overline{y}$ 可以从两个方向得到：
+
 + 正向采样 从 $i$ 采样得到 $\overline{x}$ , 从 $i+1$ 得到 offset path $\overline{y} = T(\overline{x})$
 + 反向采样 从 $i+1$采样得到 $\overline{y}$ , 然后得到 $\overline{x} = T^{-1}(\overline{y})$
 
@@ -137,10 +148,13 @@ $$
 ![图GDPT-MIS](/img/Post/2019-06-17-gradient-domain/PT-MIS.PNG)
 
 前向采样 MIS 权值为：
+
 $$
 w_{\text {forward}}(\overline{x})=\frac{p(\overline{x})}{p(\overline{x})+p(T(\overline{x}))\left|\frac{d \mu(T(\overline{x}))}{d \mu(\overline{x})}\right|}
 $$
+
 反向采样 MIS 权值为：
+
 $$
 w_{\text {backward}}(\overline{y})=\frac{p(\overline{y})}{p(\overline{y})+p(T^{-1}(\overline{y}))\left|\frac{d \mu(T^{-1}(\overline{y}))}{d \mu(\overline{y})}\right|}
 $$
@@ -148,8 +162,10 @@ $$
 ## 3、GD-BDPT
 
 ### 3.1、Shift 函数
+
 在 BDPT 中，每次迭代都生成一条相机子路径和一条光源子路径。
 记相机子路径为 $x^E$ ，光源子路径为 $x^L$
+
 $$
 x^E = \left \{x_0^E , x_1^E , \cdots , x_{s-1}^E \right\}
 $$
@@ -164,6 +180,7 @@ BDPT 中一次迭代会生成多条路径（**对于子路径的不同连接方�
 
 对于连接后形成的路径 $\overline{x}$ ，使用 Manifold Perturbation进行扰动
 对于前三个连续的 D 顶点 $x_a x_b x_c$ ，GD-GDPT 规定 $x_a$ 为相机，则有以下三种情况
+
 1. $x_b , x_c \in x^E$ ，则对 $x_a ~ x_b ~ x_c$ 进行 Manifold Perturbation
 2. $x_b \in x^E , x_c \in x^L$ 由于 S 点不能做连接点，所以 $c = b + 1$。此时由于 Manifold Perturbation也在第一段 S 链也进行了**半向量保留**，且 $x_b , x_c$为连续的 DD 点，所以退化成 GD-PT中的情况
 3. $x_b , x_c \in x^L$ 同理，所以 $ b = a +  1$ ，该情况下，整个路径由 light tracing 得到
@@ -173,6 +190,7 @@ BDPT 中一次迭代会生成多条路径（**对于子路径的不同连接方�
 ![图 8](/img/Post/2019-06-17-gradient-domain/8.PNG)
 
 ### 3.2、多重重要性采样
+
 采用和 GD-PT 一样的策略，将两种不同方向的 offset path 生成方法视为两种不同的采样策略，且同时和 BDPT 中基于多种连接方案的 MIS 合并，得到：
 $$
 w_{i j ; s t}(\overline{x})=\frac{p_{s, t}(\overline{x})}{\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})+p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|},
@@ -183,6 +201,7 @@ $$
 ## 4、GD-PM
 
 ### 4.1、Shift 函数
+
 基于 PM 的算法存在两条子路径，相机路径 $x^E$ 和光子路径 $x^L$:
 
 ![图9](/img/Post/2019-06-17-gradient-domain/9.png)
@@ -199,47 +218,57 @@ $$
 值得注意的是，若 $x^L_{t-2}$ 为 D （全局间接光子图），则不再需要后续的对 $x^L$的 manifold exploration ，而是直接相连即可。
 
 ## 5、GD-VCM
+
 传统的 VCM 算法将 BDPT 和 PM 以 vertex connect 和 vertex merge 结合起来。
 
 ### 5.1、Shift 函数
+
 G-VCM 中同样存在两条路径 $x^E$ 和 $x^L$ 。对于 $x^E$，采用 manifold perturbation
 
 VC 阶段的策略和 G-BDPT基本类似，只是在 MIS 上有所不同（考虑了 VM）。
 
 VM 阶段，对于 $x_a^E , x_b^E , x_c^E $处的 merge 操作有两种可能（PM 的 merge 必须在 D 表面上进行）：
-1. 在 $x_c^E$ 之后进行 merge ,
-此种情况和 offset 之后的 S 链吧、无关，只需要直接相连即可。
+
+1. 在 $x_c^E$ 之后进行 merge
+此种情况和 offset 之后的 S 链无关，只需要直接相连即可。
 
 ![图11](/img/Post/2019-06-17-gradient-domain/11.png)
-
 2. 在 $x_b^E$ 处进行 merge ，此时需要考虑 $x_{t-2}^L$ 的顶点属性
-   
-  + $x_{t-2}^E$ 为 D （全局间接光子图）
-  直接连接 $x^L_{t-2}$ 与 $x^L_{t-1}$ 形成了DD 
-  ![图12](/img/Post/2019-06-17-gradient-domain/12.png)
 
-  + $x_{t-2}^E$ 为 S （焦散光子图）
-  将 $x^{L,off}_{t-1}$ 设为 $x_b ^ {E , off}$，然后在 $x_b^L$ ~ $x^{L,off}_{t-1}$ 进行 manifold exploration
-  ![图13](/img/Post/2019-06-17-gradient-domain/13.png)
++ $x_{t-2}^E$ 为 D （全局间接光子图）
+
+直接连接 $x^L_{t-2}$ 与 $x^L_{t-1}$ 形成了DD 
+![图12](/img/Post/2019-06-17-gradient-domain/12.png)
+
++ $x_{t-2}^E$ 为 S （焦散光子图）
+
+将 $x^{L,off}_{t-1}$ 设为 $x_b ^ {E , off}$，然后在 $x_b^L$ ~ $x^{L,off}_{t-1}$ 进行 manifold exploration
+![图13](/img/Post/2019-06-17-gradient-domain/13.png)
 
 ### 5.2、 和 GD-PM 的区别
+
 G-PM 中，根据 $x^L_{t-1}$ 与 $x^E_{s-1}$ 的关系，形成新的 $x^{',L,off}_{t-1}$，然后根据投影得到真正的 offset 光子 $x^{L,off}_{t-1}$
 
 而在 G-VCM 中，直接将  $x^{L,off}_{t-1}$ 设置为 $x^{E,off}_{s-1}$ ，两者在收敛后是等价的，因为基于 PM 的算法具有一致性。
 
 ![图14](/img/Post/2019-06-17-gradient-domain/14.png)
+
 # 五、雅可比行列式
 
 **该部分的内容受限于本人的数学水平，可能会有较多理解不到位或者错误的地方，期待各位读者斧正！**
 
 ## 1、基于 Manifold Exploration
+
 限制项：
+
 $$
 \mathbf{c}_{i}\left(\mathbf{x}_{i-1}, \mathbf{x}_{i}, \mathbf{x}_{i+1}\right)=\mathbf{o}
 $$
+
 $$
 \mathbf{c}_{i}\left(\mathbf{x}_{i-1}, \mathbf{x}_{i}, \mathbf{x}_{i+1}\right)=T\left(\mathbf{x}_{i}\right) h\left(\mathbf{x}_{i}, \overrightarrow{\mathbf{x}_{i} \mathbf{x}_{i-1}}, \overrightarrow{\mathbf{x}_{i} \mathbf{x}_{i+1}}\right)
 $$
+
 $$
 h(\mathbf{x}, \mathbf{v}, \mathbf{w})=\frac{\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}}{\|\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}\|}
 $$
@@ -247,6 +276,7 @@ $$
 其中 $T(\mathbf{x}_{i})$ 为在 $ x_i$ 处的切平面转换矩阵，由$x_i$处的切线和副法线构成。$h(\mathbf{x}, \mathbf{v}, \mathbf{w})$ 为该点的半向量。$ o $ 为一个二维向量，当 $x_i$为 Perfect Specular 时，由于半向量和法线垂直，所以 $ o  = 0 $。
 
 整条路径 $ \overline{x} $ 的 manifold 限制为：
+
 $$
 \mathcal{S}_{\mathrm{o}}=\{\overline{\mathbf{x}} | C(\overline{\mathbf{x}})=\mathbf{o}\}
 $$
@@ -258,11 +288,12 @@ $$
 $$
 
 其中：
+
 $$
 \begin{aligned}\left\{\mathbf{x}_{1}, \ldots, \mathbf{x}_{c-1}\right\} & \equiv\left\{\mathbf{o}_{1}, \ldots, \mathbf{x}_{b}, \ldots, \mathbf{o}_{c-1}\right\} :=\mathbf{O} \\\left\{\tilde{\mathbf{x}}_{1}, \ldots, \tilde{\mathbf{x}}_{c-1}\right\} & \equiv\left\{\tilde{\mathbf{\sigma}}_{1}, \ldots, \tilde{\mathbf{x}}_{b}, \ldots, \tilde{\mathbf{o}}_{c-1}\right\} :=\tilde{\mathbf{O}} \end{aligned}
 $$
 
-由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $ \overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $\left| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right|$
+由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $\left| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right| $
 
 $$
 \begin{aligned}\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \mathbf{x}_{j}}\right|_{i j} &=\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}} \frac{\partial \mathbf{s}}{\partial \mathbf{x}_{b}}\right|\left|\frac{\partial \mathbf{O}_{l}}{\partial \mathbf{x}_{j}}\right|_{l j} \\ &=\left(\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\right)\left(\left|\frac{\partial \mathbf{x}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \mathbf{x}_{j}}{\partial \mathbf{O}_{l}}\right|_{j l}\right)^{-1} \end{aligned}
@@ -289,7 +320,6 @@ $$
 由于 $ C_i = o_i$，所以 $A$ 矩阵就包含我们所需要的偏导，只不过为倒数形式，只需要将A矩阵求逆，同时值得注意的是，由于在 Perfect Specular 顶点时，$ o = 0$ 恒成立，所以需要舍弃这部分数据：
 
 ![A2](/img/Post/2019-06-17-gradient-domain/A2.png)
-
 
 ## 2、基于半向量保留和路径顶点重连 （GD-PT）
 
@@ -326,48 +356,51 @@ $$
 
 当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $\left| \frac{\partial x}{\partial o} \right|$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
 
-  + GD-PM
-  ![gd-pm_discard](/img/Post/2019-06-17-gradient-domain/gd-pm_discard.png)
++ GD-PM
+![gd-pm_discard](/img/Post/2019-06-17-gradient-domain/gd-pm_discard.png)
 
-  + Manifold
-  ![manifold_discard](/img/Post/2019-06-17-gradient-domain/manifold_discard.png)
-
-
-
-
-
++ Manifold
+![manifold_discard](/img/Post/2019-06-17-gradient-domain/manifold_discard.png)
 
 # 六、Shift函数的开销和对比
+
 ## 6.1、Manifold
+
 设路径长度为 k , $x_a , x_b , x_c $ 为 D，有 k-3 个 S 顶点
 则在 $ x_a $ ~ $ x_b $ 阶段
+
 + $ (b-a-1) $ 次 ray tracing
 
 在 $ x_b^{off}$ ~ $x_c$ 阶段（N 为优化迭代次数）
+
 + $N \times 1 $次 牛顿迭代所需要的优化矩阵计算
 + $ N \times (c- b - 1)$ 次 ray tracing
 
 对于雅克比计算中的 $\left\| \frac{\partial \mathbf{x}}{\partial \mathbf{o}} \right\|$ 可以在最后一次迭代中，通过优化矩阵计算得到
 
++ 优点
 
-+ 优点 
 足够 robust， 效果好，符合相应的优化理论
+
 + 缺点
+
 时间开销大，**需要整条路径构造完成后才能进行**,且得到一条 offset path 需要多次迭代，同时当目标点距离初始点过远时，难以收敛，甚至无解
 
 ## 6.1、半向量保留和路径顶点重连
-设路径长度为 k ，其中 S 链的长为 k-3 
-+ $k-3$ 次 ray tracing
 
+设路径长度为 k ，其中 S 链的长为 k-3
+
++ $k-3$ 次 ray tracing
 
 + 优点
 容易实现，开销小，**只需要路径的局部坐标类型（当前点和后继点）就可以构建** offset path
 + 缺点
 不能面对复杂的情况，需要连续 DD 的路径
 
-
 # 七、GD- 算法分析
+
 基于梯度域的渲染算法依然有其基础算法的缺点，例如：
+
 + GD-PT 在焦散，光源遮挡上的问题
 + GD-BDPT在 SDS 上的问题
 + GD-MLT 需要分布优秀的基础路径
@@ -388,6 +421,7 @@ GD 算法虽然引入了计算梯度的额外开销，但是大幅提高了收�
 ![cmp2](/img/Post/2019-06-17-gradient-domain/cmp2.png)
 
 # 八、可研究点
+
 1. GD 与其他基础渲染算法的结合
 主要针对参与性介质的渲染方法，比如 GD-UPBP
 2. 更好更高效的 Shift 函数
