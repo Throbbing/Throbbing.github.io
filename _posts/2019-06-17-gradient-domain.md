@@ -273,7 +273,7 @@ $$
 h(\mathbf{x}, \mathbf{v}, \mathbf{w})=\frac{\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}}{\|\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}\|}
 $$
 
-其中 $T(\mathbf{x}_{i})$ 为在 $ x_i$ 处的切平面转换矩阵，由$x_i$处的切线和副法线构成。$h(\mathbf{x}, \mathbf{v}, \mathbf{w})$ 为该点的半向量。$ o $ 为一个二维向量，当 $x_i$为 Perfect Specular 时，由于半向量和法线垂直，所以 $ o = 0 $ 。
+其中 $T(\mathbf{x}_{i})$ 为在 $ x_i$ 处的切平面转换矩阵，由$x_i$处的切线和副法线构成。$h(\mathbf{x}, \mathbf{v}, \mathbf{w})$ 为该点的半向量。$ o $ 为一个二维向量，当 $x_i$为 Perfect Specular 时，由于半向量和法线平行，所以 $ o = 0 $ 。
 
 整条路径 $ \overline{x} $ 的 manifold 限制为：
 
