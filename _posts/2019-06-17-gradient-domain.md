@@ -197,7 +197,7 @@ $$
 w_{i j ; s t}(\overline{x})=\frac{p_{s, t}(\overline{x})}{\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})+p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|},
 $$
 
-其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $$p_{k,s+t-k}(T_{i j}(\overline{x}) \left|T_{i j}^{\prime}\right| $$ 则与梯度有关。
+其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $$p_{k,s+t-k}(T_{i j}(\overline{x}) J(T_{i j}^{\prime}) $$ 则与梯度有关。
 
 ## 4、GD-PM
 
@@ -292,7 +292,7 @@ $$
 \begin{aligned}\left\{\mathbf{x}_{1}, \ldots, \mathbf{x}_{c-1}\right\} & \equiv\left\{\mathbf{o}_{1}, \ldots, \mathbf{x}_{b}, \ldots, \mathbf{o}_{c-1}\right\} :=\mathbf{O} \\\left\{\tilde{\mathbf{x}}_{1}, \ldots, \tilde{\mathbf{x}}_{c-1}\right\} & \equiv\left\{\tilde{\mathbf{\sigma}}_{1}, \ldots, \tilde{\mathbf{x}}_{b}, \ldots, \tilde{\mathbf{o}}_{c-1}\right\} :=\tilde{\mathbf{O}} \end{aligned}
 $$
 
-由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $$\left| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right| $$
+由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $$J\left(\frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right) $$
 
 所以雅克比行列式变为
 
@@ -357,9 +357,9 @@ $$
 \left|\frac{\partial \mathbf{x}_{t-1}^{\prime,L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right| = 1
 $$
 
-由于 G-PM 在 $x_{t-2}^L$ 为 D 时，直接进行了相连，不再对光子路径进行抖动，所以整个光子路径的雅克比即为 $$\left|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right|$$ 。
+由于 G-PM 在 $x_{t-2}^L$ 为 D 时，直接进行了相连，不再对光子路径进行抖动，所以整个光子路径的雅克比即为 $$J\left(\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right)$$ 。
 
-当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $$\left| \frac{\partial x}{\partial o} \right|$$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
+当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $$J\left( \frac{\partial x}{\partial o} \right)$$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
 
 + GD-PM
 ![gd-pm_discard](/img/Post/2019-06-17-gradient-domain/gd-pm_discard.png)
@@ -381,7 +381,7 @@ $$
 + $N \times 1 $次 牛顿迭代所需要的优化矩阵计算
 + $ N \times (c- b - 1)$ 次 ray tracing
 
-对于雅克比计算中的 $\left|\frac{\partial \mathbf{x}}{\partial \mathbf{o}} \right|$ 可以在最后一次迭代中，通过优化矩阵计算得到
+对于雅克比计算中的 $$J\left(\frac{\partial \mathbf{x}}{\partial \mathbf{o}} \right)$$ 可以在最后一次迭代中，通过优化矩阵计算得到
 
 + 优点
 
