@@ -189,14 +189,14 @@ $$
 对于 $x^E = \left \{x_0^E , x_1^E , \cdots , x_{s-1}^E \right\}$ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $LS^*D$。
 对于 $x^L = \left \{x_0^L , x_1^L , \cdots , x_{t-1}^L \right\}$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^*D$。
 
-综上，对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$处使用 Density estimation, 所以不需要连续的 DD 路径
+综上对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$处使用 Density estimation, 所以不需要连续的 DD 路径 (或者说已经存在了 DD 路径，因为后续点是一个光子，而光子必定落在同一个 Diffuse 表面上)。
 对于 $x^L$ 进行 manifold perturbation。
 
-实际上，在 GD-PM 中，对于$x^E$ 的抖动会产生 $x^{E,off}_{s-1}$ , 将 $x^E_{s-1}$ 和 $x^L_{t-1}$ 的相对关系不变，以此来产生 $x^{' L,off}_{t-1}$ ，由于  $x^{' L,off}_{t-1}$ 不一定还在表面上，所以连接 $x^L_{t-2}$ 与  $x^{' L,off}_{t-1}$ 然后进行 ray tracing 得到真正的 offset 光子  $x^{L,off}_{t-1}$ ，然后在 $x^{L,off}_{t-1}$ ~ $x^L_b$ 上进行 manifold exploration。
+实际上，在 GD-PM 中，对于$x^E$ 的抖动会产生 $x^{E,off}_{s-1}$ , 将 $x^E_{s-1}$ 和 $x^L_{t-1}$ 的相对关系不变，以此来产生 $x^{\prime, L,off}_{t-1}$ ，由于  $x^{\prime, L,off}_{t-1}$ 不一定还在表面上，所以连接 $x^L_{t-2}$ 与  $x^{\prime,L,off}_{t-1}$ ， 然后进行 ray tracing 得到真正的 offset 光子  $x^{L,off}_{t-1}$ ，然后在 $x^{L,off}_{t-1}$ ~ $x^L_b$ 上进行 manifold exploration。
 
 ![图10](/img/Post/2019-06-17-gradient-domain/10.png)
 
-值得注意的是，若 $x^L_{t-2}$ 为 D ，则不再需要后续的对 $x^L$的 manifold exploration ，而是直接相连即可。
+值得注意的是，若 $x^L_{t-2}$ 为 D （全局间接光子图），则不再需要后续的对 $x^L$的 manifold exploration ，而是直接相连即可。
 
 ## 5、GD-VCM
 传统的 VCM 算法将 BDPT 和 PM 以 vertex connect 和 vertex merge 结合起来。
@@ -214,11 +214,11 @@ VM 阶段，对于 $x_a^E , x_b^E , x_c^E $处的 merge 操作有两种可能（
 
 2. 在 $x_b^E$ 处进行 merge ，此时需要考虑 $x_{t-2}^L$ 的顶点属性
    
-  + $x_{t-2}^E$ 为 D
+  + $x_{t-2}^E$ 为 D （全局间接光子图）
   直接连接 $x^L_{t-2}$ 与 $x^L_{t-1}$ 形成了DD 
   ![图12](/img/Post/2019-06-17-gradient-domain/12.png)
 
-  + $x_{t-2}^E$ 为 S
+  + $x_{t-2}^E$ 为 S （焦散光子图）
   将 $x^{L,off}_{t-1}$ 设为 $x_b ^ {E , off}$，然后在 $x_b^L$ ~ $x^{L,off}_{t-1}$ 进行 manifold exploration
   ![图13](/img/Post/2019-06-17-gradient-domain/13.png)
 
@@ -230,16 +230,138 @@ G-PM 中，根据 $x^L_{t-1}$ 与 $x^E_{s-1}$ 的关系，形成新的 $x^{',L,o
 ![图14](/img/Post/2019-06-17-gradient-domain/14.png)
 # 五、雅可比行列式
 
-# 六、Shift函数的开销和对比
-## Manifold
-+ 优点 
-足够 robust 效果好，符合相应的优化理论
-+ 缺点
-时间开销大，需要整条路径构造完成后才能进行，同时当目标点距离初始点过远时，难以收敛，甚至无解
+**该部分的内容受限于本人的数学水平，可能会有较多理解不到位或者错误的地方，期待各位读者斧正！**
 
-## 半向量保留和路径顶点重连
+## 1、基于 Manifold Exploration
+限制项：
+$$
+\mathbf{c}_{i}\left(\mathbf{x}_{i-1}, \mathbf{x}_{i}, \mathbf{x}_{i+1}\right)=\mathbf{o}
+$$
+$$
+\mathbf{c}_{i}\left(\mathbf{x}_{i-1}, \mathbf{x}_{i}, \mathbf{x}_{i+1}\right)=T\left(\mathbf{x}_{i}\right) h\left(\mathbf{x}_{i}, \overrightarrow{\mathbf{x}_{i} \mathbf{x}_{i-1}}, \overrightarrow{\mathbf{x}_{i} \mathbf{x}_{i+1}}\right)
+$$
+$$
+h(\mathbf{x}, \mathbf{v}, \mathbf{w})=\frac{\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}}{\|\eta(\mathbf{x}, \mathbf{v}) \mathbf{v}+\eta(\mathbf{x}, \mathbf{w}) \mathbf{w}\|}
+$$
+
+其中 $T(\mathbf{x}_{i})$ 为在 $ x_i$ 处的切平面转换矩阵，由$x_i$处的切线和副法线构成。$h(\mathbf{x}, \mathbf{v}, \mathbf{w})$ 为该点的半向量。$ o $ 为一个二维向量，当 $x_i$为 Perfect Specular 时，由于半向量和法线垂直，所以 $ o  = 0 $。
+
+整条路径 $ \overline{x} $ 的 manifold 限制为：
+$$
+\mathcal{S}_{\mathrm{o}}=\{\overline{\mathbf{x}} | C(\overline{\mathbf{x}})=\mathbf{o}\}
+$$
+
+综上，利用 manifold perturbation 得到的 offset path $\widetilde{x}$ 与 base path $\overline{x}$ 的雅克比可以表示为：
+
+$$
+\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \mathbf{x}_{j}}\right|_{i j}=\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}} \frac{\partial \tilde{\mathbf{O}}_{k}}{\partial \mathbf{O}_{l}} \frac{\partial \mathbf{O}_{l}}{\partial \mathbf{x}_{j}}\right|_{i j}=\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\left|\frac{\partial \tilde{\mathbf{O}}_{k}}{\partial \mathbf{O}_{l}}\right|_{k l}\left|\frac{\partial \mathbf{O}_{l}}{\partial \mathbf{x}_{j}}\right|_{l j}
+$$
+
+其中：
+$$
+\begin{aligned}\left\{\mathbf{x}_{1}, \ldots, \mathbf{x}_{c-1}\right\} & \equiv\left\{\mathbf{o}_{1}, \ldots, \mathbf{x}_{b}, \ldots, \mathbf{o}_{c-1}\right\} :=\mathbf{O} \\\left\{\tilde{\mathbf{x}}_{1}, \ldots, \tilde{\mathbf{x}}_{c-1}\right\} & \equiv\left\{\tilde{\mathbf{\sigma}}_{1}, \ldots, \tilde{\mathbf{x}}_{b}, \ldots, \tilde{\mathbf{o}}_{c-1}\right\} :=\tilde{\mathbf{O}} \end{aligned}
+$$
+
+由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $ \overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $\left| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right|$
+
+$$
+\begin{aligned}\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \mathbf{x}_{j}}\right|_{i j} &=\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}} \frac{\partial \mathbf{s}}{\partial \mathbf{x}_{b}}\right|\left|\frac{\partial \mathbf{O}_{l}}{\partial \mathbf{x}_{j}}\right|_{l j} \\ &=\left(\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\right)\left(\left|\frac{\partial \mathbf{x}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \mathbf{x}_{j}}{\partial \mathbf{O}_{l}}\right|_{j l}\right)^{-1} \end{aligned}
+$$
+
+其中 $s$ 为屏幕空间上的像素位置
+
+$$
+\begin{aligned} \frac{\partial \mathbf{x}_{b}}{\partial \mathbf{s}}=\frac{\partial \mathbf{x}_{b}}{\partial \mathbf{x}_{1}} \frac{\partial \mathbf{x}_{1}}{\partial \mathbf{s}}=\frac{\partial \mathbf{x}_{b}}{\partial \omega_{0}^{\perp}} & \frac{\partial \omega_{0}^{\perp}}{\partial \mathbf{x}_{1}} \frac{\partial \mathbf{x}_{1}}{\partial \mathbf{s}} \\ &=\frac{G\left(\mathbf{x}_{0} \leftrightarrow \mathbf{x}_{1}\right)}{G\left(\mathbf{x}_{0} \leftrightarrow \mathbf{x}_{1}\right)} \frac{\partial \mathbf{x}_{1}}{\partial \mathbf{s}} \end{aligned}
+$$
+
+$$
+\frac{\partial \mathbf{x}_{1}}{\partial \mathbf{s}}=\frac{\left\|\mathbf{x}_{1}-\mathbf{x}_{0}\right\|^{2} \cos ^{3} \theta_{0}}{\cos \theta_{1}}
+$$
+
+![partial_xs](/img/Post/2019-06-17-gradient-domain/partial_xs.png)
+
+对于 $\frac{\partial \mathbf{s}}{\partial \widetilde{\mathbf{x}}_b}$ 同理计算。
+
+对于雅克比中的前后项，考虑路径的限制函数 $ S_o$，对其进行隐函数求导：
+
+![A](/img/Post/2019-06-17-gradient-domain/A.png)
+
+由于 $ C_i = o_i$，所以 $A$ 矩阵就包含我们所需要的偏导，只不过为倒数形式，只需要将A矩阵求逆，同时值得注意的是，由于在 Perfect Specular 顶点时，$ o = 0$ 恒成立，所以需要舍弃这部分数据：
+
+![A2](/img/Post/2019-06-17-gradient-domain/A2.png)
+
+
+## 2、基于半向量保留和路径顶点重连 （GD-PT）
+
+由于使用路径顶点重连，所以重连后的路径的雅克比为 1 ，不需要再进行计算，只需要考虑其中的 S 链。
+
++ 对于中间的 S 点，用方向参数 $\omega_i$ 来表示 $x_i$ ，则对于 base path 的顶点 $\overline{x}_i$ 和 offset path 的顶点 $\overline{y}_i$ ， 其入射方向为 $ \omega_i^x$ 和 $  \omega^y_i$ ，对应的半向量为 $h_i^x$ 和 $h_i^x$ ，所以雅克比可以写成：
+
+  $$
+  \left|\frac{\partial \omega_{i}^{y}}{\partial \omega_{i}^{x}}\right|=\left|\frac{\partial \omega_{i}^{y}}{\partial \mathbf{h}^{y}}\right|\left|\frac{\partial \mathbf{h}^{x}}{\partial \omega_{i}^{x}}\right|=\frac{\omega_{o}^{y} \cdot \mathbf{h}^{y}}{\omega_{o}^{x} \cdot \mathbf{h}^{x}}
+  $$
+
+  其中半向量与入射光线的比，可以根据[这里](http://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.html)得到几何上的解释。（**关于代数角度上的推导，还有些困惑，所以这里不再列出**）
+
+  ![partial_wh](/img/Post/2019-06-17-gradient-domain/partial_wh.png)
+
++ 对于路径顶点重连后的雅克比，记 base path 中连续的 DD 点为 $x_1^x$ 和 $ x_2^x$，则雅克比为：
+  $$
+  \left|\frac{\partial \omega_{i}^{y}}{\partial \omega_{i}^{x}}\right|=\left|\frac{\partial \omega_{i}^{y}}{\partial \mathbf{x}_{2}^{y}}\right|\left|\frac{\partial \mathbf{x}_{2}^{x}}{\partial \omega_{i}^{x}}\right|=\frac{\cos \theta_{2}^{y}}{\cos \theta_{2}^{x}} \frac{\left|\mathbf{x}_{1}^{x}-\mathbf{x}_{2}^{x}\right|^{2}}{\left|\mathbf{x}_{1}^{y}-\mathbf{x}_{2}^{y}\right|^{2}}
+  $$
+
+  这里使用了微元面和微元立体角之间的关系 （$ d\omega = \frac{cos\theta dA}{r^2}$）。值得注意的是，这个关系在不同类型 Shift 函数的雅克比的计算中频繁出现，是连接方向和点的“桥梁”
+
+## 3、GD-PM 中的雅克比
+
+在 GD-PM 中，相机路径的雅克比与 GD-PT 中的计算方法类似，对于光子路径，由于 offset 光子是根据相对位置产生，所以在该点的雅克比为：
+
+$$
+\left|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right|=\left|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{\prime,L,off}}\right|\left|\frac{\partial \mathbf{x}_{t-1}^{\prime,L,off}}{\partial \mathbf{x}_{t-1}^L}\right|=\frac{G\left(\mathbf{x}_{t-2}^L, \mathbf{x}_{t-1}^{\prime,L,off}\right)}{G\left(\mathbf{x}_{t-2}^L, \mathbf{x}_{t-1}^{L,off}\right)}
+$$
+
+其中，$\left|\frac{\partial \mathbf{x}_{t-1}^{\prime, L, off}}{\partial \mathbf{x}_{t-1}^{L}}\right|$ ，因为这两项是通过相对位置偏移得到。
+
+由于 G-PM 在 $x_{t-2}^L$ 为 D 时，直接进行了相连，不再对光子路径进行抖动，所以整个 光子路径的雅克比即为 $\left|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right|$ 。
+
+当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $\left| \frac{\partial x}{\partial o} \right|$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
+
+  + GD-PM
+  ![gd-pm_discard](/img/Post/2019-06-17-gradient-domain/gd-pm_discard.png)
+
+  + Manifold
+  ![manifold_discard](/img/Post/2019-06-17-gradient-domain/manifold_discard.png)
+
+
+
+
+
+
+# 六、Shift函数的开销和对比
+## 6.1、Manifold
+设路径长度为 k , $x_a , x_b , x_c $ 为 D，有 k-3 个 S 顶点
+则在 $ x_a $ ~ $ x_b $ 阶段
++ $ (b-a-1) $ 次 ray tracing
+
+在 $ x_b^{off}$ ~ $x_c$ 阶段（N 为优化迭代次数）
++ $N \times 1 $次 牛顿迭代所需要的优化矩阵计算
++ $ N \times (c- b - 1)$ 次 ray tracing
+
+对于雅克比计算中的 $\left\| \frac{\partial \mathbf{x}}{\partial \mathbf{o}} \right\|$ 可以在最后一次迭代中，通过优化矩阵计算得到
+
+
++ 优点 
+足够 robust， 效果好，符合相应的优化理论
++ 缺点
+时间开销大，**需要整条路径构造完成后才能进行**,且得到一条 offset path 需要多次迭代，同时当目标点距离初始点过远时，难以收敛，甚至无解
+
+## 6.1、半向量保留和路径顶点重连
+设路径长度为 k ，其中 S 链的长为 k-3 
++ $k-3$ 次 ray tracing
+
+
 + 优点
-容易实现，开销小，只需要路径的局部坐标类型（当前点和后继点）就可以构建 offset path
+容易实现，开销小，**只需要路径的局部坐标类型（当前点和后继点）就可以构建** offset path
 + 缺点
 不能面对复杂的情况，需要连续 DD 的路径
 
@@ -248,11 +370,22 @@ G-PM 中，根据 $x^L_{t-1}$ 与 $x^E_{s-1}$ 的关系，形成新的 $x^{',L,o
 基于梯度域的渲染算法依然有其基础算法的缺点，例如：
 + GD-PT 在焦散，光源遮挡上的问题
 + GD-BDPT在 SDS 上的问题
-+ GD-MLT 分布优秀的基础路径
-+ GD-PM Glossy
-+ GD-VCM 高频细节确实和 Glossy - Spectrum 问题
++ GD-MLT 需要分布优秀的基础路径
++ GD-PM Glossy 上效果较差
++ GD-VCM 高频细节缺失和 Glossy - Spectrum 问题
 
-GD 算法针对原来算法大幅度提高了收敛速度
+GD 算法虽然引入了计算梯度的额外开销，但是大幅提高了收敛速度，即：
+
+**同采样数下，GD 算法更慢，但同时间下，GD 算法会有更好的效果**
+
++ 对于纯 Diffuse 传输的场景，例如 **Sponza**，梯度域方法能明显提高收敛速度。
++ 对于包含复杂路径的场景，例如 **BATHROOM**, **BOOKSHELF**，梯度域方法依赖于：
+  + 所使用的的基础渲染算法的效率
+  + Shift 函数的开销
++ 对于包含大量 $SDS$ 路径的场景，例如 TORUS，基于 **Density Esitimation** 的方法明显优于基于 **MonteCarlo Path** 的算法
+
+![cmp1](/img/Post/2019-06-17-gradient-domain/cmp1.png)
+![cmp2](/img/Post/2019-06-17-gradient-domain/cmp2.png)
 
 # 八、可研究点
 1. GD 与其他基础渲染算法的结合
