@@ -207,6 +207,7 @@ $$
 
 ![图9](/img/Post/2019-06-17-gradient-domain/9.png)
 对于 $$x^E = \{x_0^E , x_1^E , \cdots , x_{s-1}^E\} $$ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $$LS^*D$$。
+
 对于 $$x^L = \{x_0^L , x_1^L , \cdots , x_{t-1}^L\} $$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^{*}D$。
 
 综上对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$ 处使用 Density estimation, 所以不需要连续的 DD 路径 (或者说已经存在了 DD 路径，因为后续点是一个光子，而光子必定落在同一个 Diffuse 表面上)。
@@ -292,7 +293,7 @@ $$
 \begin{aligned}\left\{\mathbf{x}_{1}, \ldots, \mathbf{x}_{c-1}\right\} & \equiv\left\{\mathbf{o}_{1}, \ldots, \mathbf{x}_{b}, \ldots, \mathbf{o}_{c-1}\right\} :=\mathbf{O} \\\left\{\tilde{\mathbf{x}}_{1}, \ldots, \tilde{\mathbf{x}}_{c-1}\right\} & \equiv\left\{\tilde{\mathbf{\sigma}}_{1}, \ldots, \tilde{\mathbf{x}}_{b}, \ldots, \tilde{\mathbf{o}}_{c-1}\right\} :=\tilde{\mathbf{O}} \end{aligned}
 $$
 
-由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $$J\left(\frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right) $$
+由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $$J\left(\frac{\partial \widetilde{ \mathbf{x}}_b}{\partial \overline{\mathbf{x}}_b}\right) $$
 
 所以雅克比行列式变为
 
