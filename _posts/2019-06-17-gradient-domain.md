@@ -197,7 +197,7 @@ $$
 w_{i j ; s t}(\overline{x})=\frac{p_{s, t}(\overline{x})}{\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})+p_{k, s+t-k}\left(T_{i j}(\overline{x})\right)\left|T_{i j}^{\prime}\right|},
 $$
 
-其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $$p_{k,s+t-k}(T_{i j}(\overline{x}) |T_{i j}^{\prime}| $$ 则与梯度有关。
+其中 $\sum_{k=0}^{s+t} p_{k, s+t-k}(\overline{x})$ 与不同的路径连接方式有关，而 $$p_{k,s+t-k}(T_{i j}(\overline{x}) \left|T_{i j}^{\prime}\right| $$ 则与梯度有关。
 
 ## 4、GD-PM
 
@@ -206,7 +206,7 @@ $$
 基于 PM 的算法存在两条子路径，相机路径 $x^E$ 和光子路径 $x^L$:
 
 ![图9](/img/Post/2019-06-17-gradient-domain/9.png)
-对于 $x^E = \{x_0^E , x_1^E , \cdots , x_{s-1}^E\} $ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $$LS^*D$$。
+对于 $$x^E = \{x_0^E , x_1^E , \cdots , x_{s-1}^E\} $$ ，$x_{s-1}^E$ 必定落在 D 顶点上且 $x_0^E$ ~ $x_{s-1}^E$ 之间必定不存在 D 表面 (PM 在生成 Visible Point 时的定义)，所以 $x^E$ 的路径类型为 $$LS^*D$$。
 对于 $$x^L = \{x_0^L , x_1^L , \cdots , x_{t-1}^L\} $$ , $x_{t-1}^L$ 为光子，必定落在 D 上，但 $x_0^L$ ~ $x_{t-1}^L$ 之间可能存在 D ，所以路径类型为 $L(S|D)^{*}D$。
 
 综上对于$x^E$,使用半向量保留和路径顶点重连，由于 $x_{s-1}^E$ 处使用 Density estimation, 所以不需要连续的 DD 路径 (或者说已经存在了 DD 路径，因为后续点是一个光子，而光子必定落在同一个 Diffuse 表面上)。
@@ -246,9 +246,9 @@ VM 阶段，对于 $x_a^E , x_b^E , x_c^E $处的 merge 操作有两种可能（
 
 ### 5.2、 和 GD-PM 的区别
 
-G-PM 中，根据 $x_{t-1}^L$ 与 $x_{s-1}^E$ 的关系，形成新的 $x_{t-1}^{',L,off}$，然后根据投影得到真正的 offset 光子 $x_{t-1}^{L,off}$
+G-PM 中，根据 $x_{t-1}^L$ 与 $x_{s-1}^E$ 的关系，形成新的 $x_{t-1}^{\prime,L,off}$，然后根据投影得到真正的 offset 光子 $x_{t-1}^{L,off}$
 
-而在 G-VCM 中，直接将  $x^{L,off}_{t-1}$ 设置为 $x^{E,off}_{s-1}$ ，两者在收敛后是等价的，因为基于 PM 的算法具有一致性。
+而在 G-VCM 中，直接将  $x_{t-1}^{L,off}$ 设置为 $x_{s-1}^{E,off}$ ，两者在收敛后是等价的，因为基于 PM 的算法具有一致性。
 
 ![图14](/img/Post/2019-06-17-gradient-domain/14.png)
 
@@ -292,7 +292,9 @@ $$
 \begin{aligned}\left\{\mathbf{x}_{1}, \ldots, \mathbf{x}_{c-1}\right\} & \equiv\left\{\mathbf{o}_{1}, \ldots, \mathbf{x}_{b}, \ldots, \mathbf{o}_{c-1}\right\} :=\mathbf{O} \\\left\{\tilde{\mathbf{x}}_{1}, \ldots, \tilde{\mathbf{x}}_{c-1}\right\} & \equiv\left\{\tilde{\mathbf{\sigma}}_{1}, \ldots, \tilde{\mathbf{x}}_{b}, \ldots, \tilde{\mathbf{o}}_{c-1}\right\} :=\tilde{\mathbf{O}} \end{aligned}
 $$
 
-由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}| $
+由于在 Manifold Exploration 中，对于同一对顶点 $(\overline{\mathbf{x}}_i , \widetilde{\mathbf{x}}_i)$ 采用了**半向量保留**，所以 $\overline{o}_i = \widetilde{o}_i$ ， 所以在雅克比矩阵的中间项可以简化为 $$\left| \frac{\widetilde{\mathbf{x}}_b}{\overline{\mathbf{x}}_b}\right| $$
+
+所以雅克比行列式变为
 
 $$
 \begin{aligned}\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \mathbf{x}_{j}}\right|_{i j} &=\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}} \frac{\partial \mathbf{s}}{\partial \mathbf{x}_{b}}\right|\left|\frac{\partial \mathbf{O}_{l}}{\partial \mathbf{x}_{j}}\right|_{l j} \\ &=\left(\left|\frac{\partial \tilde{\mathbf{x}}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \tilde{\mathbf{x}}_{i}}{\partial \tilde{\mathbf{O}}_{k}}\right|_{i k}\right)\left(\left|\frac{\partial \mathbf{x}_{b}}{\partial \mathbf{s}}\right|\left|\frac{\partial \mathbf{x}_{j}}{\partial \mathbf{O}_{l}}\right|_{j l}\right)^{-1} \end{aligned}
@@ -355,9 +357,9 @@ $$
 \left|\frac{\partial \mathbf{x}_{t-1}^{\prime,L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right| = 1
 $$
 
-由于 G-PM 在 $x_{t-2}^L$ 为 D 时，直接进行了相连，不再对光子路径进行抖动，所以整个光子路径的雅克比即为 $|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}|$ 。
+由于 G-PM 在 $x_{t-2}^L$ 为 D 时，直接进行了相连，不再对光子路径进行抖动，所以整个光子路径的雅克比即为 $$\left|\frac{\partial \mathbf{x}_{t-1}^{L,off}}{\partial \mathbf{x}_{t-1}^{L}}\right|$$ 。
 
-当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $| \frac{\partial x}{\partial o} |$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
+当  $x_{t-2}^L$ 为 S 时，需要进行 Manifold Exploration , 可以采用 Manifold Perturbation 中雅克比相似的计算方法，但是值得注意的是，这里关于 $$\left| \frac{\partial x}{\partial o} \right|$$ 的计算有些**不同**，对于 Perfect Specular 部分的舍弃不一致 （**关于这部分还在思考中**）：
 
 + GD-PM
 ![gd-pm_discard](/img/Post/2019-06-17-gradient-domain/gd-pm_discard.png)
